@@ -1,0 +1,62 @@
+class Roster:
+    def __init__(self, week_start):
+        self.week_start = week_start
+        #self.week_end -- work out the weeks end from a date str
+        employees = []
+
+
+class Employee:
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email
+        self.roster = []
+
+    def add_to_roster(self, shift):
+        self.roster.append(shift)
+
+    def view_roster(self):
+        roster = []
+        for x in self.roster:
+            roster.append(x)
+        return roster
+
+    def get_email(self):
+        return self.email
+
+    def get_name(self):
+        return self.name
+
+    def __repr__(self):
+        return "Name: {} Email: {}".format(self.name, self.email)
+
+
+class Shift:
+    def __init__(self, date, start, end):
+        self.date = date
+        self.start = start
+        self.end = end
+
+    def view(self):
+        return self.day, self.start, self.end
+
+    def __repr__(self):
+        return "{} {} {}".format(self.day, self.start, self.end)
+
+
+def main():
+    employees = []
+    roster = []
+    while True:
+        argument = input('Enter Command:').split(' ')
+
+        print(argument[0])
+
+        if argument == "help":
+            print('Commands: \n add employee [name] [email] \n remove employee [name] \n view roster [week_start_date] \
+                  \n email all roster [week_start]')
+        else:
+            print('Invalid Command - type "help" for a list of commands')
+
+
+if __name__ == '__main__':
+    main()
