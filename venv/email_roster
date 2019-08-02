@@ -1,24 +1,37 @@
 class Roster:
-    def __init__(self, week_start):
+    def __init__(self, name, week_start):
+        self.name = name
         self.week_start = week_start
         #self.week_end -- work out the weeks end from a date str
-        employees = []
+        self.shifts = []
+
+    def get_week_start(self):
+        return self.week_start
+
+    def get_roster_name(self):
+        return self.name
+
+    def add_shift(self, shift):
+        if isinstance(shift, Shift):
+            print('added ', shift.view())
+            self.shifts.append(shift)
+        else:
+            print('Error')
+
+        print(len(self.shifts))
+        print(self.shifts[0])
+
+    def list_shifts(self):
+        return self.shifts[0]
 
 
 class Employee:
     def __init__(self, name, email):
         self.name = name
         self.email = email
-        self.roster = []
 
     def add_to_roster(self, shift):
         self.roster.append(shift)
-
-    def view_roster(self):
-        roster = []
-        for x in self.roster:
-            roster.append(x)
-        return roster
 
     def get_email(self):
         return self.email
@@ -31,29 +44,68 @@ class Employee:
 
 
 class Shift:
-    def __init__(self, date, start, end):
+    def __init__(self, date, start, end, employee):
         self.date = date
         self.start = start
         self.end = end
+        if isinstance(employee, Employee):
+            self.employee = employee
+        else:
+            raise Exception('Employee must be an employee object')
 
     def view(self):
-        return self.day, self.start, self.end
+        return self.date, self.start, self.end, self.employee
 
     def __repr__(self):
-        return "{} {} {}".format(self.day, self.start, self.end)
+        return "{} {} {}".format(self.date, self.start, self.end)
 
 
 def main():
     employees = []
-    roster = []
+    rosters = []
     while True:
         argument = input('Enter Command:').split(' ')
 
-        print(argument[0])
-
-        if argument == "help":
+        if argument[0] == "help":
             print('Commands: \n add employee [name] [email] \n remove employee [name] \n view roster [week_start_date] \
                   \n email all roster [week_start]')
+        elif argument[0] == "create" and argument[1] == "roster" and len(argument) == 4:
+            name, date = argument[2:]
+            week_roster = Roster(name, date)
+            rosters.append(week_roster)
+        elif argument[0] == "create" and argument[1] == "employee" and len(argument) == 4:
+            name, email = argument[2:]
+            new_employee = Employee(name, email)
+            employees.append(new_employee)
+        elif argument[0] == "add" and argument[1] == "shift" and len(argument) == 7:
+            roster_name, date, start_time, end_time, staff_member = argument[2:]
+
+            for employee in employees:
+                if employee.get_name() == staff_member:
+                    print(type(staff_member))
+                    staff_member = employee
+                    print(type(staff_member))
+
+            new_shift = Shift(date, start_time, end_time, staff_member)
+            for roster in rosters:
+                if roster.get_roster_name() == roster_name:
+                    rosters.add_shift(new_shift)
+
+        elif argument[0] == "test":
+            week_roster = Roster("Test", "1/1/1")
+            rosters.append(week_roster)
+
+            new_employee = Employee("Tom", "t")
+            employees.append(new_employee)
+
+            new_shift = Shift("1", "13:00", "14:00", employees[0])
+
+            rosters[0].add_shift(new_shift)
+            new_shift = Shift("1", "13:00", "14:00", employees[0])
+            rosters[0].add_shift(new_shift)
+
+            print(rosters[0].get_roster_name(),rosters[0].get_week_start(), '\n shifts: \n', rosters[0].list_shifts())
+
         else:
             print('Invalid Command - type "help" for a list of commands')
 
