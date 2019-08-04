@@ -1,37 +1,53 @@
+import datetime
+import smtplib
+
+
 class Roster:
+
     def __init__(self, name, week_start):
         self.name = name
-        self.week_start = week_start
-        #self.week_end -- work out the weeks end from a date str
+        self.week_start = datetime.datetime.strptime(week_start, '%d/%m/%Y')
+        if self.check_startweek(self.week_start):
+            self.week_start = datetime.datetime.strptime(week_start, '%d/%m/%Y')
+        else:
+            raise Exception("Start week must be a Monday You entered: {} ".format(self.week_start.strftime('%A')))
+
+        self.week_end = self.week_start + datetime.timedelta(days=6)
+        #print('type: ', self.week_start + datetime.timedelta(days=7))
+        # print('type: ', self.week_end.strftime('%A'))
+
         self.shifts = []
 
+    def check_startweek(self, date):
+        return isinstance(date, datetime.datetime) and self.week_start.strftime('%A') == "Monday"
+
     def get_week_start(self):
-        return self.week_start
+        #return self.week_start
+        return self.week_start.strftime('%d/%m/%Y')
+
+    def get_week_end(self):
+        return self.week_end.strftime('%d/%m/%Y')
 
     def get_roster_name(self):
         return self.name
 
     def add_shift(self, shift):
         if isinstance(shift, Shift):
-            print('added ', shift.view())
             self.shifts.append(shift)
         else:
             print('Error')
 
-        print(len(self.shifts))
-        print(self.shifts[0])
-
-    def list_shifts(self):
-        return self.shifts[0]
+    def get_shifts(self):
+        shifts = []
+        for shift in self.shifts:
+            shifts.append(shift)
+        return shifts
 
 
 class Employee:
     def __init__(self, name, email):
         self.name = name
         self.email = email
-
-    def add_to_roster(self, shift):
-        self.roster.append(shift)
 
     def get_email(self):
         return self.email
@@ -53,11 +69,23 @@ class Shift:
         else:
             raise Exception('Employee must be an employee object')
 
+    def get_employee(self):
+        return self.employee
+
+    def get_start(self):
+        return self.start
+
+    def get_end(self):
+        return self.end
+
+    def get_date(self):
+        return self.date
+
     def view(self):
-        return self.date, self.start, self.end, self.employee
+        return self.date, self.start, self.end, self.employee.get_name()
 
     def __repr__(self):
-        return "{} {} {}".format(self.date, self.start, self.end)
+        return "{} {} {} {}".format(self.date, self.start, self.end, self.employee.get_name())
 
 
 def main():
@@ -89,25 +117,106 @@ def main():
             new_shift = Shift(date, start_time, end_time, staff_member)
             for roster in rosters:
                 if roster.get_roster_name() == roster_name:
-                    rosters.add_shift(new_shift)
+                    roster.add_shift(new_shift)
+
+        elif argument[0] == "email" and argument[1] == "roster" and argument[2] == "all" and len(argument) == 4:
+            #roster_send = None
+            for roster in rosters:
+                if roster.get_roster_name() == argument[3]:
+                    email_roster(roster)
+                else:
+                    print('Cannot find roster with that name')
 
         elif argument[0] == "test":
-            week_roster = Roster("Test", "1/1/1")
+            week_roster = Roster("Test", "5/8/2019")
             rosters.append(week_roster)
 
-            new_employee = Employee("Tom", "t")
+            new_employee = Employee("Tom", "thomas.msampey@gmail.com")
             employees.append(new_employee)
 
-            new_shift = Shift("1", "13:00", "14:00", employees[0])
+            new_employee = Employee("bill", "thomas.msampey@gmail.com")
+            employees.append(new_employee)
 
-            rosters[0].add_shift(new_shift)
-            new_shift = Shift("1", "13:00", "14:00", employees[0])
+            new_shift = Shift("10/1/1990", "13:00", "14:00", employees[0])
             rosters[0].add_shift(new_shift)
 
-            print(rosters[0].get_roster_name(),rosters[0].get_week_start(), '\n shifts: \n', rosters[0].list_shifts())
+            new_shift = Shift("11/1/1990", "14:00", "15:00", employees[1])
+            rosters[0].add_shift(new_shift)
+
+            new_shift = Shift("12/1/1990", "14:00", "15:00", employees[0])
+            rosters[0].add_shift(new_shift)
+
+            new_shift = Shift("12/1/1990", "14:00", "15:00", employees[1])
+            rosters[0].add_shift(new_shift)
+
+            email_roster(rosters[0])
 
         else:
             print('Invalid Command - type "help" for a list of commands')
+
+
+def email_roster(roster):
+    if isinstance(roster, Roster):
+        if len(roster.get_shifts()) > 0:
+            email_addresses = get_emails(roster)
+
+            for emails in range(len(email_addresses)):
+                server = smtplib.SMTP('SMTP.gmail.com', 587)
+                server.ehlo()
+                server.starttls()
+                server.login(#enter email login here)
+                subject = "Roster for {} starting date: {} ending date:{}".format(roster.get_roster_name(),
+                                                                                roster.get_week_start(),
+                                                                                roster.get_week_end())
+                msg = "{}".format(format_roster(group_shifts(roster)))
+
+                message = 'Subject: {} \n\n{}'.format(subject, msg)
+                server.sendmail('thomas.msampey@gmail.com', email_addresses[emails], message)
+                server.quit()
+
+            print('Emails sent')
+        else:
+            print('This roster has no shifts to send')
+
+
+def get_emails(roster):
+    emails = []
+    if isinstance(roster, Roster):
+        shifts = roster.get_shifts()
+        print(len(shifts))
+        for email in shifts:
+            if not email.get_employee().get_email() in emails:
+                emails.append(email.get_employee().get_email())
+        return emails
+    else:
+        raise Exception('Invalid Argument Type needs to be of type \'Roster\' you gave {}'.format(type(roster)))
+
+
+def group_shifts(roster):
+    employee_dict = {}
+
+    if isinstance(roster, Roster):
+        for shift in roster.get_shifts():
+            name = shift.get_employee().get_name()
+            employee_dict.setdefault(name, []).append(shift)
+
+        return employee_dict
+    else:
+        raise Exception('Invalid Argument Type needs to be of type \'Roster\' you gave {}'.format(type(roster)))
+
+
+def format_roster(employee_dictionary):
+    print(type(employee_dictionary))
+    if isinstance(employee_dictionary, dict):
+        output = '\n'
+        for key, values in employee_dictionary.items():
+            output += "{}:\n".format(key)
+            for shift in values:
+                output += "{}: Start time: {} End time: {}".format(shift.get_date(), shift.get_start(), shift.get_end())
+                output += '\n'
+        return output
+    else:
+        raise Exception('Argument needs to be of type dict you gave {}'.format(type(employee_dictionary)))
 
 
 if __name__ == '__main__':
